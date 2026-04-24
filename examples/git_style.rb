@@ -143,8 +143,11 @@ result = OptimistXL.with_standard_exception_handling(parser) { parser.parse(ARGV
 # When no subcommands are registered, `parse` returns a plain Hash. When
 # subcommands ARE registered, it returns a SubcommandResult. If the user gave
 # only global options without a subcommand, raise so they see help.
+# Note: `OptimistXL.die` (module-level) only works if you entered through
+# `OptimistXL.options`. Since we used `Parser.new` + `parser.parse` directly,
+# we call `parser.die` (instance method) instead.
 unless result.is_a?(OptimistXL::SubcommandResult)
-  OptimistXL.die "no command given (try --help)"
+  parser.die "no command given (try --help)"
 end
 
 global = result.global_options
@@ -166,20 +169,20 @@ if cmd == "remote"
     end
     add_opts = OptimistXL.with_standard_exception_handling(add_parser) { add_parser.parse(rest) }
     name, url, *extra = add_parser.leftovers
-    OptimistXL.die "remote add: need <name> and <url>" unless name && url
-    OptimistXL.die "remote add: unexpected extra args: #{extra.inspect}" unless extra.empty?
+    add_parser.die "need <name> and <url>" unless name && url
+    add_parser.die "unexpected extra args: #{extra.inspect}" unless extra.empty?
     puts "→ remote add name=#{name.inspect} url=#{url.inspect} fetch=#{add_opts[:fetch]}"
 
   when "remove", "rm"
     name = rest.shift
-    OptimistXL.die "remote remove: need <name>" unless name
+    parser.die "remote remove: need <name>" unless name
     puts "→ remote remove name=#{name.inspect}"
 
   when "list", nil
     puts "→ remote list (verbose=#{opts[:verbose]})"
 
   else
-    OptimistXL.die "unknown `remote` subcommand: #{nested.inspect} (expected add|remove|list)"
+    parser.die "unknown `remote` subcommand: #{nested.inspect} (expected add|remove|list)"
   end
 
   # Show how the global options propagated
